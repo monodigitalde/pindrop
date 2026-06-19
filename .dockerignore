@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+*.md
+data
+*.sqlite*
+coverage
+.vscode
+.idea
+.DS_Store
+docker-compose*.yml

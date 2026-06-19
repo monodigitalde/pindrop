@@ -1,0 +1,24 @@
+{
+  "name": "pindrop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pindrop — self-hosted, open-source visual feedback. Clients pin comments directly onto your staging site.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/widget",
+    "packages/server"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --workspace=packages/widget && npm run build --workspace=packages/server",
+    "build:widget": "npm run build --workspace=packages/widget",
+    "build:server": "npm run build --workspace=packages/server",
+    "dev": "npm run dev --workspace=packages/server",
+    "dev:widget": "npm run dev --workspace=packages/widget",
+    "test": "npm run test --workspaces --if-present",
+    "start": "node packages/server/dist/index.js"
+  }
+}

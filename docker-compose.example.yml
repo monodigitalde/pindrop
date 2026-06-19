@@ -1,0 +1,57 @@
+# Example stack: your app + Pindrop, wired through Traefik.
+#
+# Two integration options:
+#   A) Manual (simplest, works with ANY setup): add the script tag to your HTML
+#      yourself — see the README Quickstart. No middleware needed.
+#   B) Automatic injection via a reverse-proxy filter (shown below with Traefik's
+#      "injectbody" plugin) — no changes to your app's HTML.
+#
+# Pindrop itself is just an HTTP container on port 4878. It does not depend on
+# Traefik — nginx, Caddy, or a plain port mapping work just as well.
+#
+# The injectbody plugin must be enabled in Traefik's STATIC config, e.g.:
+#   experimental:
+#     plugins:
+#       injectbody:
+#         moduleName: github.com/traefik/plugin-rewritebody
+#         version: v0.3.1
+# (See README for nginx / Caddy equivalents.)
+
+services:
+  myapp:
+    image: nginx:alpine
+    networks: [web]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.myapp.rule=Host(`staging.example.com`)"
+      - "traefik.http.routers.myapp.entrypoints=websecure"
+      - "traefik.http.routers.myapp.tls.certresolver=le"
+      # Inject the Pindrop <script> into every HTML response of this service.
+      - "traefik.http.middlewares.pindrop-inject.plugin.injectbody.lastBody=</body>"
+      - "traefik.http.middlewares.pindrop-inject.plugin.injectbody.body=<script src='/pindrop/widget.js'></script></body>"
+      - "traefik.http.routers.myapp.middlewares=pindrop-inject"
+
+  pindrop:
+    image: ghcr.io/monodigitalde/pindrop:latest
+    networks: [web]
+    environment:
+      - ENABLED=true
+      - PORT=4878
+      - DB_PATH=/data/db.sqlite
+      - ALLOWED_ORIGINS=*
+    volumes:
+      - pindrop-data:/data
+    labels:
+      - "traefik.enable=true"
+      # Same host as the app — the widget + API live under /pindrop.
+      - "traefik.http.routers.pindrop.rule=Host(`staging.example.com`) && PathPrefix(`/pindrop`)"
+      - "traefik.http.routers.pindrop.entrypoints=websecure"
+      - "traefik.http.routers.pindrop.tls.certresolver=le"
+      - "traefik.http.services.pindrop.loadbalancer.server.port=4878"
+
+networks:
+  web:
+    external: true
+
+volumes:
+  pindrop-data:
